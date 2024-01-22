@@ -38,6 +38,8 @@ app.use('*',(req,res) =>{
         message: 'read the docs here https://github.com/Kaede-No-Ki/otakudesu-rest-api'
     })
 })
-app.listen(port, () => {
-    console.log('listening on port', port)
-})
+// app.listen(port, () => {
+//     console.log('listening on port', port)
+// })
+
+export default app;
