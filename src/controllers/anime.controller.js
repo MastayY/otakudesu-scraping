@@ -2,9 +2,8 @@ import { baseUrl as _baseUrl } from "../utils/base-url.js";
 import { default as Axios } from "axios";
 import { load } from "cheerio";
 import { requestFailed } from "../utils/errors.js";
-import { get } from "../utils/episodeHelper.js";
 import { baseUrl } from "../utils/base-url.js";
-import e from "express";
+import puppeteer from "puppeteer";
 
 export async function detailAnime(req, res) {
   const id = req.params.id;
@@ -90,8 +89,7 @@ export async function detailAnime(req, res) {
         .each(function () {
           genre_name = $(this).text();
           genre_id = $(this)
-            .attr("href")
-            .replace(`https://otakudesu.moe/genres/`, "");
+            .attr("href").match(/\/genres\/([^\/]+)/)[1];
           genre_link = $(this).attr("href");
           genreList.push({ genre_name, genre_id, genre_link });
           object.genre_list = genreList;
@@ -104,8 +102,7 @@ export async function detailAnime(req, res) {
           title: $(element).find("span > a").text(),
           id: $(element)
             .find("span > a")
-            .attr("href")
-            .replace('https://otakudesu.moe/', ""),
+            .attr("href").match(/\/episode\/([^\/]+)/)[1],
           link: $(element).find("span > a").attr("href"),
           uploaded_on: $(element).find(".zeebr").text(),
         };
@@ -123,109 +120,61 @@ export async function detailAnime(req, res) {
             },
           ]
         : episode_list;
-    const batch_link = {
-      id:
-        $("div.venser > div:nth-child(6) > ul").text().length !== 0
-          ? $("div.venser > div:nth-child(6) > ul > li > span:nth-child(1) > a")
-              .attr("href")
-              .replace(`https://otakudesu.moe/batch/`, "")
-          : "Masih kosong gan",
-      link:
-        $("div.venser > div:nth-child(6) > ul").text().length !== 0
-          ? $(
-              "div.venser > div:nth-child(6) > ul > li > span:nth-child(1) > a"
-            ).attr("href")
-          : "Masih kosong gan",
-    };
-    const empty_link = {
-      id: "Masih kosong gan",
-      link: "Masih kosong gan",
-    };
-    object.batch_link = batch_link;
-    //console.log(epsElement);
     res.json(object);
   } catch (err) {
     console.log(err);
     requestFailed(req, res, err);
   }
 }
-export async function batchAnime(req, res) {
-  const id = req.params.id;
-  const fullUrl = `${baseUrl}batch/${id}`;
-  console.log(fullUrl);
-  Axios.get(fullUrl)
-    .then((response) => {
-      const $ = load(response.data);
-      const obj = {};
-      obj.title = $(".batchlink > h4").text();
-      obj.status = "success";
-      obj.baseUrl = fullUrl;
-      let low_quality = _batchQualityFunction(0, response.data);
-      let medium_quality = _batchQualityFunction(1, response.data);
-      let high_quality = _batchQualityFunction(2, response.data);
-      obj.download_list = { low_quality, medium_quality, high_quality };
-      res.send(obj);
-    })
-    .catch((err) => {
-      requestFailed(req, res, err);
-    });
-}
+
 export async function epsAnime(req, res) {
   const id = req.params.id;
-  const fullUrl = `${_baseUrl}${id}`;
+  const fullUrl = `${_baseUrl}/episode/${id}`;
   try {
     const response = await Axios.get(fullUrl);
     const $ = load(response.data);
-    const streamElement = $("#lightsVideo").find("#embed_holder");
+    const streamElement = $("#lightsVideo").find("#pembed");
     const obj = {};
     obj.title = $(".venutama > h1").text();
+    obj.imageUrl = $(".cukder").find("img").attr("src");
     obj.baseUrl = fullUrl;
-    obj.id = fullUrl.replace(_baseUrl, "");
-    const streamLink = streamElement.find("iframe").attr("src");
-    // const streamLinkResponse = await Axios.get(streamLink)
-    // const stream$ = cheerio.load(streamLinkResponse.data)
-    // const sl = stream$('body').find('script').html().search('sources')
-    // const endIndex = stream$('body').find('script').eq(0).html().indexOf('}]',sl)
-    // const val = stream$('body').find('script').eq(0).html().substr(sl,endIndex - sl+1).replace(`sources: [{'file':'`,'')
-    // console.log(val);
-    // console.log(val.replace(`','type':'video/mp4'}`,''));
-    obj.link_stream = await get(streamLink);
-    console.log($('#pembed > div > iframe').attr('src'));
+    obj.id = id;
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--disable-gpu']
+    });
+    const page = await browser.newPage();
+
+    page.setDefaultNavigationTimeout(60000);
+
+    await page.goto(fullUrl, { waitUntil: 'domcontentloaded' });
+
+    await page.waitForSelector('iframe');
+  
+    const src = await page.$eval('iframe', (iframe) => iframe.src);
+    await browser.close();
+
+    obj.link_stream = src;
+
+    $("div.keyingpost > li").each((i, element) => {
+      const dataEpsList = {
+        title: $(element).find("a").text(),
+        id: $(element).find("a").attr("href").match(/\/episode\/([^\/]+)/)[1]
+      }
+
+      obj.episode_list = obj.episode_list ? [...obj.episode_list, dataEpsList] : [dataEpsList]
+    })
+
     let low_quality;
     let medium_quality;
     let high_quality;
-    let mirror1 = [];
-    let mirror2 = [];
-    let mirror3 = [];
-
-    $('#embed_holder > div.mirrorstream > ul.m360p > li').each((idx,el)=>{``
-      mirror1.push({
-        host:$(el).find('a').text().trim(),
-        id:$(el).find('a').attr('href'),
-      });
-    });
-    $('#embed_holder > div.mirrorstream > ul.m480p > li').each((idx,el)=>{
-      mirror2.push({
-        host:$(el).find('a').text().trim(),
-        id:$(el).find('a').attr('href'),
-      });
-    });
-    $('#embed_holder > div.mirrorstream > ul.m720p > li').each((idx,el)=>{
-      mirror3.push({
-        host:$(el).find('a').text().trim(),
-        id:$(el).find('a').attr('href'),
-      });
-    });
-    obj.mirror1 = {quality:'360p',mirrorList:mirror1}
-    obj.mirror2 = {quality:'480p',mirrorList:mirror2}
-    obj.mirror3 = {quality:'720p',mirrorList:mirror3}
+    
     if($('#venkonten > div.venser > div.venutama > div.download > ul > li:nth-child(1)').text() === ''){
-      console.log('ul is empty');
       low_quality = _notFoundQualityHandler(response.data,0)
       medium_quality = _notFoundQualityHandler(response.data,1)
       high_quality = _notFoundQualityHandler(response.data,2)
     }else{
-      console.log('ul is not empty');
       low_quality = _epsQualityFunction(0, response.data);
       medium_quality = _epsQualityFunction(1, response.data);
       high_quality = _epsQualityFunction(2, response.data);
@@ -234,27 +183,6 @@ export async function epsAnime(req, res) {
     res.send(obj);
   } catch (err) {
     console.log(err);
-    requestFailed(req, res, err);
-  }
-}
-
-export async function epsMirror(req, res) {
-  const mirrorId = req.body.mirrorId;
-  const animeId = req.params.animeId;
-  const fullUrl = `${baseUrl}${animeId}/${mirrorId}`;
-  try {
-    const response = await Axios.get(fullUrl);
-    const $ = load(response.data);
-    const obj = {};
-    obj.title = $(".venutama > h1").text();
-    obj.baseUrl = fullUrl;
-    obj.id = fullUrl.replace(_baseUrl, "");
-    const streamLink = $('#pembed > div > iframe').attr('src')
-    obj.streamLink = streamLink
-    obj.link_stream = await get(streamLink);
-    res.send(obj);
-  } catch (error) {
-    console.log(error);
     requestFailed(req, res, err);
   }
 }
