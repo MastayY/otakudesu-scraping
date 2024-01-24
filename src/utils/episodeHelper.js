@@ -3,7 +3,6 @@ import { load } from "cheerio";
 export const get = async (url) => {
     try {
         const response = await Axios.get(url);
-        console.log(response)
         const $ = load(response.data);
         let source1 = $.html().search('"file":');
         let source2 = $.html().search("'file':");
