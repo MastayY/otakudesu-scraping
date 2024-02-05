@@ -1,4 +1,4 @@
-export const baseUrl = 'https://otakudesu.cam/';
+export const baseUrl = 'https://otakudesu.media/';
 export const completeAnime = 'complete-anime/';
 export const onGoingAnime = 'ongoing-anime/';
 export const schedule = 'jadwal-rilis/';
