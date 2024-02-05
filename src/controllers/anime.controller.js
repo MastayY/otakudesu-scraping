@@ -177,6 +177,7 @@ export async function epsAnime(req, res) {
     const obj = {};
     obj.title = $(".venutama > h1").text();
     obj.baseUrl = fullUrl;
+
     obj.id = $("div.flir > a:contains('Episodes')").attr("href")?.match(/\/anime\/([^\/]+)/)[1] || "-";
     obj.stream_link = streamElement.find("iframe").attr("src");
     obj.prev_eps_slug = $("div.flir > a:contains('Previous')").attr("href")?.match(/\/episode\/([^\/]+)/)[1] || "-";
