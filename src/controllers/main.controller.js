@@ -126,9 +126,15 @@ export function completeAnimeList(req, res) {
             link,
           });
         });
+
+      const next = $(".pagenavix > a.next").text();
+      
+      const maxPage = next == "Berikutnya »" ? parseInt($('.page-numbers:nth-last-child(2)').text()) : parseInt($('.page-numbers:nth-last-child(1)').text())
+
       res.status(200).json({
         status: "success",
         baseUrl: fullUrl,
+        maxPage,
         animeList,
       });
     })
@@ -172,9 +178,15 @@ export function onGoingAnimeList(req, res) {
             link,
           });
         });
+
+      const next = $(".pagenavix > a.next").text();
+    
+      const maxPage = next == "Berikutnya »" ? parseInt($('.page-numbers:nth-last-child(2)').text()) : parseInt($('.page-numbers:nth-last-child(1)').text())
+
       res.status(200).json({
         status: "success",
         baseUrl: baseUrl,
+        maxPage,
         animeList,
       });
     })
