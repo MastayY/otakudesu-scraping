@@ -4,6 +4,7 @@ import { default as Axios } from "axios";
 import { requestFailed } from "../utils/errors.js";
 import { ImageList } from "../utils/image_genre.js";
 import e from "express";
+import { headers } from "../utils/headers.js";
 
 const baseUrl = _baseUrl;
 const completeAnime = _completeAnime;
@@ -13,7 +14,9 @@ export function home(req, res) {
   let home = {};
   let on_going = [];
   let complete = [];
-  Axios.get(baseUrl)
+  Axios.get(baseUrl, {
+    headers
+  })
     .then((response) => {
       const $ = load(response.data);
       const element = $(".venz");
@@ -94,7 +97,9 @@ export function completeAnimeList(req, res) {
     typeof params === "undefined" ? "" : params === "1" ? "" : `page/${params}`;
   const fullUrl = `${baseUrl}${completeAnime}${page}`;
   console.log(fullUrl);
-  Axios.get(fullUrl)
+  Axios.get(fullUrl, {
+    headers
+  })
     .then((response) => {
       const $ = load(response.data);
       const element = $(".venz");
@@ -146,7 +151,9 @@ export function onGoingAnimeList(req, res) {
   const params = req.params.page;
   const page = typeof params === "undefined" ? "" : params === "1" ? "" : `page/${params}`;
   const fullUrl = `${baseUrl}${onGoingAnime}${page}`;
-  Axios.get(fullUrl)
+  Axios.get(fullUrl, {
+    headers
+  })
     .then((response) => {
       const $ = load(response.data);
       const element = $(".venz");
@@ -290,7 +297,10 @@ export function animeByGenre(req, res) {
 export function search(req, res) {
   const query = req.params.query;
   const fullUrl = `${baseUrl}?s=${query}&post_type=anime`;
-  Axios.get(fullUrl).then((response) => {
+  Axios.get(fullUrl, {
+    headers,
+    'Referer': baseUrl
+  }).then((response) => {
     const $ = load(response.data);
     const element = $(".page");
     let obj = {};

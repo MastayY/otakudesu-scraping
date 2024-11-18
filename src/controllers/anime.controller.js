@@ -5,13 +5,16 @@ import { requestFailed } from "../utils/errors.js";
 import { get, getStreamUrl } from "../utils/episodeHelper.js";
 import { baseUrl } from "../utils/base-url.js";
 import e from "express";
+import { headers } from "../utils/headers.js";
 
 export async function detailAnime(req, res) {
   const id = req.params.id;
   const fullUrl = _baseUrl + `anime/${id}`;
   // console.log(fullUrl);
   try {
-    const response = await Axios.get(fullUrl);
+    const response = await Axios.get(fullUrl, {
+      headers
+    });
 
     const $ = load(response.data);
     const detailElement = $(".venser").find(".fotoanime");
@@ -171,7 +174,9 @@ export async function epsAnime(req, res) {
   const id = req.params.id;
   const fullUrl = `${_baseUrl}/episode/${id}`;
   try {
-    const response = await Axios.get(fullUrl);
+    const response = await Axios.get(fullUrl, {
+      headers
+    });
     const $ = load(response.data);
     const streamElement = $("#lightsVideo").find("#embed_holder");
     const obj = {};
